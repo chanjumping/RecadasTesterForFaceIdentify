@@ -1,0 +1,55 @@
+﻿
+1.现在终端实现的协议有如下:
+
+TERMINAL_COM_ACK				= 0x0001,	//终端通用应答
+HEART_BEAT              		= 0x0002,
+GPS_REPORT						= 0x0200,
+MUTIMIDEA_UPLOAD				= 0x0801,
+MUTIMIDEA_UPLOAD_RESP			= 0x8800,
+COMMON_ACK						= 0x8001,
+PLATFORM_ACTIVE_UPGRADE_COM		= 0x8FA0,	//平台主动升级指令
+TERMIANL_DEMMAND_UPGRADE		= 0x0FA1,	//终端请求升级指令
+TERMIANL_DEMMAND_UPGRADE_RES 	= 0x8FA1,	//终端请求升级指令应答
+TEXT_MESSAGE_SEND				= 0x8300,	//文本信息下发
+SET_TERMINAL_PARAM				= 0x8103,	//设置终端参数
+UPGRADE_RESULT					= 0x0108,	//终端升级结果通知
+CAMERA_SHOOT					= 0x8801,	//摄像头立即拍摄命令
+CAMERA_SHOOT_RES				= 0x0805,	//摄像头立即拍摄命令应答
+TERMINAL_REGISTER				= 0x0100,	//终端注册
+TERMINAL_LOGIN					= 0x0102,	//终端鉴权
+REGISTER_RESPONSE				= 0x8100,	//终端注册应答
+DRIVER_INFO_MANAGEMENT_TO_DEVICE = 0x8B00,
+DRIVER_INFO_MANAGEMENT_TO_PLATFORM = 0x0B01,
+
+2.文档中未实现协议
+8.5 查询终端参数
+8.6 查询终端参数应答
+8.7 查询终端属性
+8.8 查询终端属性应答
+8.9 下发终端升级包
+8.10 终端升级结果通知
+
+
+8.4设置终端参数只实现了
+0xF091	BYTE	Adas触发报警速度，0~255km/h
+0xF092	BYTE	报警提示音量，0~8，8最大，0静音，默认值为6，0xff表示不修改参数
+
+8.19文本信息下发【瑞为】只实现了tts播读功能
+
+
+3.多媒体数据上传流程
+告警上传后，多媒体数据开始分片上传，服务器要对上传的每个分片进行通用应答
+
+
+4.终端鉴权交互
+1.终端连上平台后，会判断自己是否注册过，如果终端注册过，就直接发送鉴权消息，没有的话就发送注册消息
+2.平台在下发终端注册应答时，返回结果为0,1,3时都要下发鉴权码
+3.鉴权通过后进行进行数据通讯
+4.在连接断开后，终端重连上平台后，会再次进行鉴权
+5.终端注销指令没有实现
+6.鉴权失败重新发送注册过程
+终端通过发送终端鉴权消息进行鉴权，平台回复平台通用应答消息。
+
+
+
+6.协议中没有指定回应的消息统一用通用应答回复

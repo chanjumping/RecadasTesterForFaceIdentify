@@ -1,0 +1,7 @@
+.idea
+conf.ini
+*.pyc
+*.log
+*.zip
+*.jpg
+*.mp4
