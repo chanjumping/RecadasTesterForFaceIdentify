@@ -172,8 +172,7 @@ class SaveMediaThread(threading.Thread):
                                 name_size.pop(media_name_bak)
                             self.buf = b''
                             self.media_name = ''
-                    else:
-                        data = data[1:-1]
+                    elif data[:2] == b'\x08\x01':
                         total_pkg = big2num(byte2str(data[12:14]))
                         pkg_no = big2num(byte2str(data[14:16]))
                         msg_body = data[16:-1]
@@ -224,5 +223,35 @@ class SaveMediaThread(threading.Thread):
                                     logger.error(FileNotFoundError)
                                 self.buf = b''
                                 self.media_name = ''
+
+                    elif data[:2] == b'\x0E\x10':
+                        msg_body = data[16:-1]
+
+                        result = byte2str(msg_body[0:1])
+                        similarity_threshold = big2num(byte2str(msg_body[1:2]))
+                        similarity = big2num(byte2str(msg_body[2:4]))
+                        cp_type = byte2str(msg_body[4:5])
+                        cp_face_id_len = big2num(byte2str(msg_body[5:6]))
+                        cp_face_id = msg_body[6:6 + cp_face_id_len].decode("gbk")
+                        if not cp_face_id:
+                            cp_face_id = None
+                        location_info = msg_body[6 + cp_face_id_len:6 + cp_face_id_len + 28]
+                        img_type = byte2str(msg_body[34 + cp_face_id_len:35 + cp_face_id_len])
+                        img_data = msg_body[35 + cp_face_id_len:]
+
+                        alarm_flag = byte2str(location_info[0:4])
+                        state = byte2str(location_info[4:8])
+                        latitude = big2num(byte2str(location_info[8:12]))
+                        longitude = big2num(byte2str(location_info[12:16]))
+                        speed = big2num(byte2str(location_info[18:20])) / 10
+                        alarm_time = byte2str(location_info[22:])
+
+                        media_name = "告警时间_{}_结果_{}_相似度_{}_人脸id_{}.jpg".format(alarm_time, result, similarity, cp_face_id)
+                        path_dir = os.path.join('Result', 'Face_Identify')
+                        if not os.path.exists(path_dir):
+                            os.mkdir(path_dir)
+                        with open(os.path.join(path_dir, media_name), 'ab') as f:
+                            f.write(img_data)
+
                 time.sleep(0.001)
             time.sleep(0.5)

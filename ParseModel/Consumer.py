@@ -149,7 +149,9 @@ parse_type_su_ter = {
     b'\x01\x08': lambda x: parse_upgrade_result_su_ter(x),
     b'\x08\x05': lambda x: parse_take_picture_su_ter(x),
     b'\x00\x01': lambda x: parse_device_comm_reply_su_ter(x),
-
+    b'\x0E\x11': lambda x: parse_face_download_reply_su_ter(x),
+    b'\x0E\x12': lambda x: parse_query_driver_info_su_ter(x),
+    b'\x0E\x10': lambda x: parse_identify_result_upload_su_ter(x),
 }
 
 parse_type_su_ter_for_file = {

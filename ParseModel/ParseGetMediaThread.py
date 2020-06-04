@@ -204,7 +204,7 @@ class GetMediaThread(threading.Thread):
                         data = '%s%s%s%s' % ('7E', body, calc_check_code(body), '7E')
                         send_queue.put(data)
                         for x in sorted(GetMediaThread.rec_pkg_list):
-                            media_queue.put(GlobalVar.media_id_data.get(x))
+                            media_queue.put(GlobalVar.media_id_data.get(x)[1:-1])
                         GlobalVar.serial_no_list = []
                         media_finish[GetMediaThread.current_media_id] = True
                         GlobalVar.pkg_list = []

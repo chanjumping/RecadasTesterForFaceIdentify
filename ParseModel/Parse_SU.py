@@ -5,9 +5,8 @@ from ParseModel.ParseUpgrade import *
 import time
 from Util.GlobalVar import *
 from Util.Log import logger
-from ParseModel.ParseUpgrade import upgrade_su
 from Function.SendFaceFile import event
-from Util.Gui_Face import event_youwei
+from GUI.Gui_Face import event_youwei
 
 
 # 解析工作状态上报
@@ -341,14 +340,15 @@ def parse_query_adas_para(data):
     logger.debug('———————————————— END ————————————————')
 
 
-# 解析驾驶员身份信息库下发结果
+# 解析驾驶员身份信息库下发结果E9
 def parse_send_face_list_info(data):
     result = data[8:9]
     logger.debug("———————————————— 驾驶员身份信息库下发结果： {} ————————————————".format(byte2str(result)))
-    event.set()
+    if byte2str(result) == '00':
+        event.set()
 
 
-# 收到文件下发信息的回复
+# 收到文件下发信息的回复E8
 def parse_send_face_info(data):
     logger.debug("———————————————— 文件信息下发 ————————————————")
     event.set()

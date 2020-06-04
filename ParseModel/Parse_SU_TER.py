@@ -74,29 +74,29 @@ def parse_location_upload_su_ter(data):
     longitude = big2num(byte2str(msg_body[12:16]))
     speed = big2num(byte2str(msg_body[18:20]))
     alarm_time = byte2str(msg_body[22:28])
-    if len(data) == 41:
-        logger.debug('—————— 报警标识 {} 状态 {} 速度 {} km/h {} 纬度 {} 经度 {} 时间 {} ——————'.format(alarm_flag, state, speed / 10,
+    # if len(data) == 41:
+    logger.debug('—————— 报警标识 {} 状态 {} 速度 {} km/h {} 纬度 {} 经度 {} 时间 {} ——————'.format(alarm_flag, state, speed / 10,
                                                                                           gps_state, latitude,
                                                                                           longitude, alarm_time))
-    else:
-        additional_information = msg_body[28:]
-        peripheral = additional_information[0:1]
-        # 判断是否为包含里程的位置上报信息，里程附加信息Id为0x01
-        if peripheral == b'\x01':
-
-            mileage = big2num(byte2str(additional_information[2:6]))
-            logger.debug('—————— 报警标识 {} 状态 {} 速度 {} km/h {} 纬度 {} 经度 {} 时间 {} 里程 {} ——————'.format(alarm_flag, state,
-                                                                                                    speed / 10,
-                                                                                                    gps_state, latitude,
-                                                                                                    longitude,
-                                                                                                    alarm_time,
-                                                                                                    mileage/10))
-            alarm_info_list = additional_information[6:]
-            if alarm_info_list:
-                parse_alarm_info_include_mileage(alarm_info_list)
-        else:
-            alarm_info_list = additional_information
-            parse_alarm_info_include_mileage(alarm_info_list)
+    # else:
+    #     additional_information = msg_body[28:]
+    #     peripheral = additional_information[0:1]
+    #     # 判断是否为包含里程的位置上报信息，里程附加信息Id为0x01
+    #     if peripheral == b'\x01':
+    #
+    #         mileage = big2num(byte2str(additional_information[2:6]))
+    #         logger.debug('—————— 报警标识 {} 状态 {} 速度 {} km/h {} 纬度 {} 经度 {} 时间 {} 里程 {} ——————'.format(alarm_flag, state,
+    #                                                                                                 speed / 10,
+    #                                                                                                 gps_state, latitude,
+    #                                                                                                 longitude,
+    #                                                                                                 alarm_time,
+    #                                                                                                 mileage/10))
+    #         alarm_info_list = additional_information[6:]
+    #         if alarm_info_list:
+    #             parse_alarm_info_include_mileage(alarm_info_list)
+    #     else:
+    #         alarm_info_list = additional_information
+    #         parse_alarm_info_include_mileage(alarm_info_list)
 
     reply_data = comm_reply_su_ter(data, '00')
     send_queue.put(reply_data)
@@ -728,3 +728,171 @@ def parse_take_picture_su_ter(data):
     logger.debug('多媒体数量 {}'.format(media_num))
     logger.debug('多媒体ID {}'.format(media_no))
     logger.debug('———————————————— END ————————————————')
+
+
+def parse_face_download_reply_su_ter(data):
+    msg_body = data[12:-1]
+    reply_serial_no = byte2str(msg_body[0:2])
+    result = byte2str(msg_body[2:3])
+    num = big2num(byte2str(msg_body[3:4]))
+    current_no = big2num(byte2str(msg_body[4:5]))
+    face_id_len = big2num(byte2str(msg_body[5:6]))
+    face_id = msg_body[6:6+face_id_len].decode('gbk')
+    logger.debug('———————————————— 驾驶员身份库数据下载应答 ————————————————')
+    logger.debug('应答流水号 {}'.format(reply_serial_no))
+    logger.debug('应答结果 {}'.format(result))
+    logger.debug('需要下载总数 {}'.format(num))
+    logger.debug('当前下载到第 {} 个文件'.format(current_no))
+    logger.debug('当前下载的人脸ID {}'.format(face_id))
+    logger.debug('———————————————— END ————————————————')
+
+
+# 解析驾驶员身份库信息查询应答
+def parse_query_driver_info_su_ter(data):
+    msg_body = data[12:-1]
+
+    # 人脸库列表个数
+    query_face_num = big2num(byte2str(msg_body[0:1]))
+
+    logger.debug('———————————————— 驾驶员身份库信息查询结果 ————————————————')
+    logger.debug('人脸ID总数： {}'.format(query_face_num))
+
+    offset = 0
+
+    # 人脸库信息列表
+    face_id_list = msg_body[1:]
+
+    for n in range(query_face_num):
+
+        face_id_length = big2num(byte2str(face_id_list[0 + offset: 1 + offset]))
+        face_id = face_id_list[1 + offset: 1 + offset + face_id_length].decode('gbk')
+
+        logger.debug("人脸ID： {}".format(face_id))
+
+        offset = 1 + offset + face_id_length
+
+    logger.debug('———————————————— END ————————————————')
+
+
+time_img = {}
+time_serial = {}
+loss_pkg = {}
+
+
+def parse_identify_result_upload_su_ter(data):
+    global time_img
+    global time_serial
+    global loss_pkg
+    serial_no = byte2str(data[10:12])
+    # 消息体属性
+    msg_property = big2num(byte2str(data[2:4]))
+    # 确定是否有分包数据
+    if 0x2000 & msg_property == 0x2000:
+        msg_body = data[16:-1]
+        total_pkg = big2num(byte2str(data[12:14]))
+        pkg_no = big2num(byte2str(data[14:16]))
+
+        result = byte2str(msg_body[0:1])
+        similarity_threshold = big2num(byte2str(msg_body[1:2]))
+        similarity = big2num(byte2str(msg_body[2:4]))
+        cp_type = byte2str(msg_body[4:5])
+        cp_face_id_len = big2num(byte2str(msg_body[5:6]))
+        cp_face_id = msg_body[6:6 + cp_face_id_len].decode("gbk")
+        location_info = msg_body[6 + cp_face_id_len:6 + cp_face_id_len + 28]
+        img_type = byte2str(msg_body[34 + cp_face_id_len:35 + cp_face_id_len])
+
+        alarm_flag = byte2str(location_info[0:4])
+        state = byte2str(location_info[4:8])
+        latitude = big2num(byte2str(location_info[8:12]))
+        longitude = big2num(byte2str(location_info[12:16]))
+        speed = big2num(byte2str(location_info[18:20])) / 10
+        alarm_time = byte2str(location_info[22:])
+
+        # if result == "00" or result == '01' or result == '06':
+        #     img_data = msg_body[35 + cp_face_id_len:]
+
+        if pkg_no == 1:
+
+            # 记录告警时刻（标识告警的唯一性）对应的流水号，后续重传时用到
+            time_serial[alarm_time] = serial_no
+
+            time_img[alarm_time] = {}
+            time_img[alarm_time][pkg_no] = data
+
+            loss_pkg[alarm_time] = []
+
+            # 收到第一个包打印告警相关信息
+            logger.debug('———————————————— 驾驶员身份库数据下载应答 ————————————————')
+            logger.debug('比对结果 {}'.format(result))
+            logger.debug('比对相似度阈值 {}'.format(similarity_threshold))
+            logger.debug('比对相似度 {}'.format(similarity))
+            logger.debug('比对类型 {}'.format(cp_type))
+            logger.debug('比对人脸ID {}'.format(cp_face_id))
+
+            logger.debug('图片格式 {}'.format(img_type))
+            logger.debug('—————— 报警标识 {} 状态 {} 速度 {} km/h 纬度 {} 经度 {} 时间 {} ——————'.format(alarm_flag, state, speed,
+                                                                                           latitude, longitude, alarm_time))
+            logger.debug('———————————————— END ————————————————')
+
+        # 如果接收到的不是第一个分片包也不是最后一个分片包，则将该分片包存储进media_id_data
+        elif not pkg_no == total_pkg:
+            time_img[alarm_time][pkg_no] = data
+        # 如果是最后一个分片包，如果该分片包对应的告警ID的数据未获取完成，则将该分片包加入time_img中
+        else:
+            time_img[alarm_time][pkg_no] = data
+            for x in list(time_img[alarm_time].keys()):
+                if x not in list(range(total_pkg+1))[1:]:
+                    loss_pkg.get(alarm_time).append(x)
+            if not loss_pkg.get(alarm_time):
+                retrans_serial_no = time_serial.get(alarm_time)
+                msg_body = retrans_serial_no + "0000"
+                body = '8E10' + num2big(int(len(msg_body) / 2)) + GlobalVar.DEVICEID + num2big(
+                    GlobalVar.get_serial_no()) + msg_body
+                data = '7E' + body + calc_check_code(body) + '7E'
+                send_queue.put(data)
+                for x in sorted(list(time_img.get(alarm_time).keys())):
+                    media_queue.put(time_img.get(alarm_time).get(x))
+                loss_pkg.pop(alarm_time)
+                time_img.pop(alarm_time)
+                time_serial.pop(alarm_time)
+            else:
+                retrans_serial_no = time_serial.get(alarm_time)
+                pkg_sum = num2big(len(loss_pkg.get(alarm_time)), 2)
+                retrans_pkg = ''.join([num2big(x, 2) for x in loss_pkg.get(alarm_time)])
+
+                msg_body = retrans_serial_no + pkg_sum + retrans_pkg
+                body = '8E10' + num2big(int(len(msg_body) / 2)) + GlobalVar.DEVICEID + num2big(
+                    GlobalVar.get_serial_no()) + msg_body
+                data = '7E' + body + calc_check_code(body) + '7E'
+                send_queue.put(data)
+
+    else:
+        msg_body = data[12:-1]
+
+        result = byte2str(msg_body[0:1])
+        similarity_threshold = big2num(byte2str(msg_body[1:2]))
+        similarity = big2num(byte2str(msg_body[2:4]))
+        cp_type = byte2str(msg_body[4:5])
+        cp_face_id_len = big2num(byte2str(msg_body[5:6]))
+        cp_face_id = msg_body[6:6 + cp_face_id_len].decode("gbk")
+        location_info = msg_body[6 + cp_face_id_len:6 + cp_face_id_len + 28]
+        img_type = byte2str(msg_body[34 + cp_face_id_len:35 + cp_face_id_len])
+
+        alarm_flag = location_info[0:4]
+        state = byte2str(location_info[4:8])
+        latitude = big2num(byte2str(location_info[8:12]))
+        longitude = big2num(byte2str(location_info[12:16]))
+        speed = big2num(byte2str(location_info[18:20])) / 10
+        alarm_time = byte2str(location_info[22:])
+        logger.debug('———————————————— 驾驶员身份库数据下载应答 ————————————————')
+        logger.debug('比对结果 {}'.format(result))
+        logger.debug('比对相似度阈值 {}'.format(similarity_threshold))
+        logger.debug('比对相似度 {}'.format(similarity))
+        logger.debug('比对类型 {}'.format(cp_type))
+        logger.debug('比对人脸ID {}'.format(cp_face_id))
+
+        logger.debug('图片格式 {}'.format(img_type))
+        logger.debug('—————— 报警标识 {} 状态 {} 速度 {} km/h 纬度 {} 经度 {} 时间 {} ——————'.format(alarm_flag, state, speed,
+                                                                                       latitude, longitude,
+                                                                                       alarm_time))
+        logger.debug('———————————————— END ————————————————')

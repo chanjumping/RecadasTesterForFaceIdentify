@@ -1,11 +1,8 @@
-import tkinter
-from tkinter import *
-from tkinter import ttk
-from Util.Gui_Su import *
-from Util.Gui_SuTer import *
-from Util.Gui_SF import *
-from Util.Gui_JT808 import *
-from Util.Gui_Face import FaceWindow
+from GUI.Gui_Su import *
+from GUI.Gui_SuTer import *
+from GUI.Gui_SF import *
+from GUI.Gui_JT808 import *
+from GUI.Gui_Face import FaceWindow
 
 
 class MainWindow():
@@ -160,16 +157,20 @@ class MainWindow():
                      self.frame_jt808_upgrade, self.frame_jt808_reboot, self.frame_jt808_parameter, self.mainwindow)
 
     def face_identify(self):
-        frame_su_face = LabelFrame(self.face, text="人脸信息", font=("STxingkai", 20))
-        frame_su_face.grid(row=0, column=0, sticky=W, columnspan=1, rowspan=1)
 
-        frame_su_face_youwei = LabelFrame(self.face, text="有为人脸", font=("STxingkai", 20))
-        frame_su_face_youwei.grid(row=0, column=1, sticky=W, columnspan=1, rowspan=1)
+        frame_su_face_youwei = LabelFrame(self.face, text="有为人脸识别", font=("STxingkai", 20))
+        frame_su_face_youwei.grid(row=0, column=0, sticky=W, columnspan=1, rowspan=2)
 
-        frame_list = [frame_su_face, frame_su_face_youwei]
+        frame_su_face = LabelFrame(self.face, text="吉标人脸外设", font=("STxingkai", 20))
+        frame_su_face.grid(row=0, column=1, sticky=W, columnspan=1, rowspan=1)
+
+        frame_su_ter_face = LabelFrame(self.face, text="吉标人脸终端", font=("STxingkai", 20))
+        frame_su_ter_face.grid(row=1, column=1, sticky=W, columnspan=1, rowspan=1)
+
+        frame_list = [frame_su_face, frame_su_face_youwei, frame_su_ter_face]
         self.grid_conf(frame_list)
 
-        FaceWindow(frame_su_face, frame_su_face_youwei).face_func_window()
+        FaceWindow(frame_su_face, frame_su_face_youwei, frame_su_ter_face).face_func_window()
 
 
 if __name__ == "__main__":
