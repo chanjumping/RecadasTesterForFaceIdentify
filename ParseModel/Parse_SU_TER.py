@@ -822,7 +822,7 @@ def parse_identify_result_upload_su_ter(data):
             loss_pkg[alarm_time] = []
 
             # 收到第一个包打印告警相关信息
-            logger.debug('———————————————— 驾驶员身份库数据下载应答 ————————————————')
+            logger.debug('———————————————— 驾驶员身份识别上报 ————————————————')
             logger.debug('比对结果 {}'.format(result))
             logger.debug('比对相似度阈值 {}'.format(similarity_threshold))
             logger.debug('比对相似度 {}'.format(similarity))
@@ -878,13 +878,13 @@ def parse_identify_result_upload_su_ter(data):
         location_info = msg_body[6 + cp_face_id_len:6 + cp_face_id_len + 28]
         img_type = byte2str(msg_body[34 + cp_face_id_len:35 + cp_face_id_len])
 
-        alarm_flag = location_info[0:4]
+        alarm_flag = byte2str(location_info[0:4])
         state = byte2str(location_info[4:8])
         latitude = big2num(byte2str(location_info[8:12]))
         longitude = big2num(byte2str(location_info[12:16]))
         speed = big2num(byte2str(location_info[18:20])) / 10
         alarm_time = byte2str(location_info[22:])
-        logger.debug('———————————————— 驾驶员身份库数据下载应答 ————————————————')
+        logger.debug('———————————————— 驾驶员身份识别上报 ————————————————')
         logger.debug('比对结果 {}'.format(result))
         logger.debug('比对相似度阈值 {}'.format(similarity_threshold))
         logger.debug('比对相似度 {}'.format(similarity))
