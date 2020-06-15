@@ -32,6 +32,7 @@ class ReadConfig:
         self.instant_video_port_local = 9999
         self.youwei_version = False
         self.jt808_version = 2011
+        self.gps_test = False
 
     def get_config(self):
         content = open(conf_path, encoding='utf-8').read()
@@ -58,6 +59,7 @@ class ReadConfig:
         self.set_instant_video_port_local(config.getint('config', 'instant_video_port_local'))
         self.set_youwei_version(config.getboolean('config', 'youwei_version'))
         self.set_jt808_version(config.getint('config', 'jt808_version'))
+        self.set_gps_test(config.getboolean('config', 'gps_test'))
 
     def set_sync_flag(self, value):
         self.sync_flag = value
@@ -154,6 +156,12 @@ class ReadConfig:
 
     def get_jt808_version(self):
         return self.jt808_version
+
+    def set_gps_test(self, value):
+        self.gps_test = value
+
+    def get_gps_test(self):
+        return self.gps_test
 
 
 conf = ReadConfig()

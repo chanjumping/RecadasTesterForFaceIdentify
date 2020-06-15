@@ -6,7 +6,7 @@ from Util.GlobalVar import get_serial_no
 
 client = socket.socket()
 
-client.connect(('172.16.100.65', 8888))
+client.connect(('172.16.100.66', 8888))
 
 first = True
 while True:

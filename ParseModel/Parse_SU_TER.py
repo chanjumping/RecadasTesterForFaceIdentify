@@ -5,6 +5,7 @@ from Util.GlobalVar import *
 from Util import GlobalVar
 from Util.Log import log_event
 from Util.CommonMethod import *
+from datetime import datetime
 
 comm_type = {
     b'\x81\x03': '设置终端参数',
@@ -78,6 +79,18 @@ def parse_location_upload_su_ter(data):
     logger.debug('—————— 报警标识 {} 状态 {} 速度 {} km/h {} 纬度 {} 经度 {} 时间 {} ——————'.format(alarm_flag, state, speed / 10,
                                                                                           gps_state, latitude,
                                                                                           longitude, alarm_time))
+
+    # 告警标志位和状态位解析
+
+    bin_state_flag = bin(int(state, 16))[2:]
+    bin_state_flag = '0' * (32 - len(bin_state_flag)) + bin_state_flag
+
+    if conf.get_gps_test():
+        from Tool.Relay import rc
+        if datetime.strptime(alarm_time, '%y%m%d%H%M%S') > rc.poweron_time:
+            if not rc.isSaved and bin_state_flag[-2] == '1':
+                rc.update_located_time()
+                rc.power_off()
     # else:
     #     additional_information = msg_body[28:]
     #     peripheral = additional_information[0:1]
@@ -896,3 +909,25 @@ def parse_identify_result_upload_su_ter(data):
                                                                                        latitude, longitude,
                                                                                        alarm_time))
         logger.debug('———————————————— END ————————————————')
+
+
+def parse_locations_upload_su_ter(data):
+    # 2019修改项
+    if conf.jt808_version == 2011:
+        msg_body = data[12:-1]
+    elif conf.jt808_version == 2019:
+        msg_body = data[17:-1]
+
+    num = big2num(byte2str(msg_body[0:2]))
+    data_type = byte2str(msg_body[2:3])
+    if data_type == '00':
+        data_type = '正常位置批量汇报'
+    elif data_type == '01':
+        data_type = '盲区补传'
+    logger.debug('———————————————— 定位数据批量上传 ————————————————')
+    logger.debug('数据项个数 {}'.format(num))
+    logger.debug('位置数据类型 {}'.format(data_type))
+    logger.debug('———————————————— END ————————————————')
+
+    reply_data = comm_reply_su_ter(data, '00')
+    send_queue.put(reply_data)

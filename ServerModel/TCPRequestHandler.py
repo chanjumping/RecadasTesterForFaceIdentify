@@ -18,12 +18,15 @@ class TCPRequestHandler(socketserver.BaseRequestHandler):
         if conf.get_protocol_type() == 1:
             self.timeOut = None
         else:
-            self.timeOut = 20
+            self.timeOut = 1800
         self.remain = b''
         self.isAlive = True
         self.request.settimeout(self.timeOut)
 
     def handle(self):
+        if conf.get_protocol_type() == 5 and conf.get_gps_test():
+            from Tool.Relay import rc
+            rc.update_connect_time()
         time.sleep(0.5)
         address, port = self.client_address
         logger.debug('【 Data Server 】 Connected by {} {} ...'.format(address, port))

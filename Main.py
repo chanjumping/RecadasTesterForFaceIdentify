@@ -13,9 +13,6 @@ from Util.GlobalVar import query_msg_queue
 from ServerModel.WebServer import run_http_server
 from GUI.Gui_Main import MainWindow
 
-
-path = os.path.realpath(__file__)
-sep = os.sep
 wake_event = threading.Event()
 
 
@@ -68,6 +65,13 @@ def main():
     get_media_thread = GetMediaThread('【 Data Server 】 GetMedia Thread Start ...')
     get_media_thread.setDaemon(True)
     get_media_thread.start()
+
+    if conf.get_gps_test():
+        from Tool.Relay import rc
+        rc.power_on()
+        testLoop = threading.Thread(target=rc.testLoop)
+        logger.debug('【 Data Server 】 Timer Thread Start ...')
+        testLoop.start()
 
     MainWindow()
     try:

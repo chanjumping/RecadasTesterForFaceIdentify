@@ -152,6 +152,8 @@ parse_type_su_ter = {
     b'\x0E\x11': lambda x: parse_face_download_reply_su_ter(x),
     b'\x0E\x12': lambda x: parse_query_driver_info_su_ter(x),
     b'\x0E\x10': lambda x: parse_identify_result_upload_su_ter(x),
+    b'\x07\x04': lambda x: parse_locations_upload_su_ter(x),
+
 }
 
 parse_type_su_ter_for_file = {

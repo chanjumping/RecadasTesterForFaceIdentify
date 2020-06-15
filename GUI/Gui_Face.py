@@ -28,6 +28,7 @@ class FaceWindow(object):
 
         self.face_case_path = ''
         self.face_image_path = ''
+        self.face_path = ''
 
 
         self.root_face_youwei = face_youwei
@@ -110,14 +111,23 @@ class FaceWindow(object):
         self.frame_su_image_select = Button(self.root_face_youwei, text="选择图片", command=self.select_image, bd=5, width=15)
         self.frame_su_image_select.grid(row=8, column=0, ipadx=20, ipady=5, padx=5, pady=5, sticky=W)
 
-        frame_register_youwei = Button(self.root_face_youwei, text="图片注册", command=self.register_youwei, width=15, bd=5)
+        frame_register_youwei = Button(self.root_face_youwei, text="图片注册", command=self.start_register_youwei, width=15, bd=5)
         frame_register_youwei.grid(row=8, column=1, ipadx=20, ipady=5, padx=5, pady=5, sticky=W)
 
-        frame_delete_face_youwei = Button(self.root_face_youwei, text="删除人脸", command=self.delete_face, width=15, bd=5)
+        frame_delete_face_youwei = Button(self.root_face_youwei, text="删除人脸", command=self.delete_face_youwei, width=15, bd=5)
         frame_delete_face_youwei.grid(row=9, column=0, ipadx=20, ipady=5, padx=5, pady=5, sticky=W)
 
-        frame_identify_youwei = Button(self.root_face_youwei, text="人脸识别", command=self.face_identify, width=15, bd=5)
+        frame_identify_youwei = Button(self.root_face_youwei, text="人脸识别", command=self.face_identify_youwei, width=15, bd=5)
         frame_identify_youwei.grid(row=9, column=1, ipadx=20, ipady=5, padx=5, pady=5, sticky=W)
+
+        self.frame_face_path = Label(self.root_face_youwei,text="人脸目录：")
+        self.frame_face_path.grid(row=10, column=0, ipadx=20, ipady=5, pady=5, sticky=W, columnspan=2)
+
+        frame_select_path = Button(self.root_face_youwei, text="选择目录", command=self.select_path, width=15, bd=5)
+        frame_select_path.grid(row=11, column=0, ipadx=20, ipady=5, padx=5, pady=5, sticky=W)
+
+        frame_register_all = Button(self.root_face_youwei, text="注册全部人脸", command=self.register_all_face_youwei, width=15, bd=5)
+        frame_register_all.grid(row=11, column=1, ipadx=20, ipady=5, padx=5, pady=5, sticky=W)
 
 
         # 人脸信息UI布局——吉标终端
@@ -153,6 +163,13 @@ class FaceWindow(object):
         if self.casefilename:
             self.frame_su_image_path.config(text="图片路径：" + self.casefilename)
             self.face_image_path = self.casefile
+
+
+    def select_path(self):
+        self.face_path = tkinter.filedialog.askdirectory()
+        if self.face_path:
+            self.frame_face_path.config(text="人脸目录：" + os.path.split(self.face_path)[-1])
+
 
     # 下发人脸信息列表-全替换
     def replace_all_face(self):
@@ -325,13 +342,17 @@ class FaceWindow(object):
         data = '7E' + calc_check_code(msg_body) + num2big(GlobalVar.get_serial_no()) + msg_body + '7E'
         send_queue.put(data)
 
+    def start_register_youwei(self):
+        t1 = threading.Thread(target=self.register_youwei, args=())
+        t1.start()
+
     def register_youwei(self):
         person_id = int(self.person_id_cont2.get())
         image_id = int(self.image_id_cont.get())
         with open(self.face_image_path, 'rb') as f:
             img_content = f.read()
             size = len(img_content)
-            piece = 8000
+            piece = 2048
             r = size % piece
             pkg_num = size // piece if r == 0 else (size // piece) + 1
             for x in range(pkg_num):
@@ -346,7 +367,7 @@ class FaceWindow(object):
                 send_queue.put(data)
                 event_youwei.wait()
 
-    def delete_face(self):
+    def delete_face_youwei(self):
         if self.face_case_path:
             path = self.face_case_path
         else:
@@ -356,7 +377,7 @@ class FaceWindow(object):
         test_point, data = case.get_excel_data()
         send_queue.put(data)
 
-    def face_identify(self):
+    def face_identify_youwei(self):
         if self.face_case_path:
             path = self.face_case_path
         else:
@@ -365,4 +386,31 @@ class FaceWindow(object):
         case.open()
         test_point, data = case.get_excel_data()
         send_queue.put(data)
+
+    def register_all_face_youwei(self):
+        for x in os.listdir(self.face_path):
+            face_name = x.split('.')[0]
+            person_id = int(face_name.split('_')[0])
+            image_id = int(face_name.split('_')[1])
+            image_path = os.path.join(self.face_path, x)
+            with open(image_path, 'rb') as f:
+                img_content = f.read()
+                size = len(img_content)
+                piece = 2048
+                r = size % piece
+                pkg_num = size // piece if r == 0 else (size // piece) + 1
+                for x in range(pkg_num):
+                    offset = x * piece
+                    if x == pkg_num - 1:
+                        piece = piece if r == 0 else r
+                    file_content_piece = img_content[offset:offset + piece]
+                    logger.debug(
+                        '—————— 文件大小 {} 偏移量 {} 数据长度 {} ——————'.format(size, offset, piece))
+                    msg_body = '033D' + '65' + 'B4' + num2big(person_id, 4) + num2big(image_id, 4) + num2big(size,
+                                                                                                             4) + num2big(
+                        offset, 4) + num2big(piece) + byte2str(file_content_piece)
+                    data = '7E' + calc_check_code(msg_body) + num2big(GlobalVar.get_serial_no()) + msg_body + '7E'
+                    send_queue.put(data)
+                    event_youwei.wait()
+            time.sleep(1)
 
